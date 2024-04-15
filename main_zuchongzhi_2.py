@@ -264,75 +264,17 @@ def load_circuit(n=53, depth=20, seed=0, elided=0, sequence='ABCDCDAB', swap_tri
 if __name__ == '__main__':
 	
 	sys.setrecursionlimit(100000)
-	#iter = 0
-	# while(1):
-	# 	t = iter % 10
-	# 	if t == 0 :
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz56/zcz56_12'
-			
-	# 	elif t == 1:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz56/zcz56_14'
-	# 	elif t == 2:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz56/zcz56_16'
-	# 	elif t == 3:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz56/zcz56_18'
-	# 	elif t == 4:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz56/zcz56_20'
-	# 	elif t == 5:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz60/zcz60_12'
-	# 	elif t == 6:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz60/zcz60_16'
-	# 	elif t == 7:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz60/zcz60_20'
-	# 	elif t == 8:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz60/zcz60_22'
-	# 	elif t == 9:
-	# 		mpath = './circuits/zuchongzhi_circuits/zcz60/zcz60_24'
-	num_args = len(sys.argv)
+	#num_args = len(sys.argv)
 	#iter = -1
-	if(num_args > 4):
-		mpath = sys.argv[1]
-		zcz_depth = sys.argv[2]
-		iter = int(sys.argv[3])
-		circuit_dir = mpath + '/circuit.txt'
-		n, circuit, qubits_map = parse_all_information(circuit_dir)
-		if int(zcz_depth) == 56:
-			basis = '0' * 56
-		elif int(zcz_depth) == 60:
-			basis = '0' * 60
-
-	# if t < 5:
-	# 		basis = '0'*56
-	# 	else:
-	# 		basis = '0' * 60
-	
-	# elif int(zcz_depth) == 53:
-	# 	basis = '0' * 53
-	# circuit = load_circuit(depth=20,swap_trick=False)
-	# tn = circuit.psi
-	# basis = '0' * circuit.N
-	# basis = '00000000000000000000000000000000000000000000000000000000'
-	
-	#opt = get_optimizer( 2**32, 10)
-	#rehs = circuit.amplitude_rehearse(optimize=opt)
-	#print(rehs['tn'])
-	#print("hello\n")
-		
-	# basis = [basis0, basis1]
-	# basis = ['00100111000111001101111010111010011001101111100111111010']
-	# print(basis)
-		while(iter < 300):
-			prepare_compute_amplitudes(iter,mpath,circuit, basis, max_size=31, max_search_time=720)
-			iter = iter + 1
-	else:
-		mpath = sys.argv[1]
-		syc_depth = int(sys.argv[2])
-		circuit = load_circuit(depth=syc_depth,swap_trick=False,path = mpath)
-		iter = int(sys.argv[3])
-		basis = '0' * 53
-		while(iter < 300):
-			prepare_compute_amplitudes(iter,mpath,circuit, basis, max_size=31, max_search_time=720)
-			iter = iter + 1
+	mpath = sys.argv[1]
+	zcz_depth = sys.argv[2]
+	qubits_num = 60
+	#qbits_num = int(sys.argv[3])
+	circuit_dir = mpath + '/circuit.txt'
+	n, circuit, qubits_map = parse_all_information(circuit_dir)
+	basis = '0' * qbits_num
+ 
+	prepare_compute_amplitudes(iter,mpath,circuit, basis, max_size=31, max_search_time=720)
 
 
 

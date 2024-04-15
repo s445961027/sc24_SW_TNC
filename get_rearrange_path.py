@@ -1,17 +1,31 @@
 import os
 import sys
-import quimb.tensor as qtn
-import cotengra as ctg
-import numpy as np
-from cotengra.plot import tree_to_networkx
-import networkx as nx
-import time
-import copy
-import random
-import sys
 import math
-from trans import Trans as T
+import copy
+from  trans import Trans as T
+from trans import Test  
 
+def get_last_line(filename):
+	try:
+		filesize=os.path.getsize(filename)
+		if filesize == 0:
+			return None
+		else:
+			with open(filename,'rb') as fp:
+				offset = -8
+				while -offset < filesize:
+					fp.seek(offset,2)
+					lines=fp.readlines()
+					if len(lines) >= 2:
+						return lines[-1].decode()
+					else:
+						offset *= 2
+				fp.seek(0)
+				lines=fp.readlines()
+				return lines[-1].decode()
+	except FileNotFoundError:
+		print(filename + ' not found! ')
+		return None
 
 def find_stems(path,indices,target_dim):
 	signal=[]
@@ -362,438 +376,171 @@ def detect_stem_szq(newPath,indices,target_dim):
 
 def sort_key(path):
 	return path[-1]
-
-
-def get_optimizer_original(target_size, max_search_time):
-	
-	opt = ctg.HyperOptimizer(
-		methods=['kahypar'],
-		max_time=max_search_time,              # just search for 2 minutes
-		max_repeats=100,
-		progbar=True,
-		parallel=True,
-		#parallel='ray',
-		#parallel=False,
-		minimize='flops', #{'size','flops','combo'},what to target
-		#slicing_reconf_opts={'target_size': target_size},
-		#slicing_opts={'target_size': target_size,'inplace':True},
-	)
-	return opt
-
-
-
-def get_optimizer_sliced(target_size, max_search_time):
-	
-	opt = ctg.HyperOptimizer(
-		methods=['kahypar'],
-		max_time=max_search_time,              # just search for 2 minutes
-		max_repeats=100,
-		progbar=True,
-		parallel=True,
-		#parallel='ray',
-		#parallel=False,
-		minimize='flops', #{'size','flops','combo'},what to target
-		slicing_reconf_opts={'target_size': target_size},
-		#slicing_opts={'target_size': target_size,'inplace':True},
-	)
-	return opt
-
-
-def get_amplitude_tn(circ, dtype, basis=None):
-	basis = '0' * circ.N
-	sampler = qtn.MPS_computational_state(basis)
-	tn = circ.psi & sampler
-	tn.full_simplify_(output_inds=[])
-	tn.astype_(dtype)
-	return tn
-
-def path_str_to_int(path):
-	tran = Trans()
-	steps = len(path)
-	k = 1 
-	path_int = list()
-	for step in path:
-		step_new = [int(step[0]), int(step[1]), steps - k]
-		path_int.append(step_new)
-		k += 1
-	print("path int is",path_int)
-	newPath = trans_path_index(path_int)
-	return newPath
-
-def trans_path_index(path):
-		steps = len(path)
-		align = [0]*(steps+1)
-		simu = list()
-		for i in range(steps+1):
-			simu.append(i)
-		newPath = list()
-		k = 1
-		for step in path:
-			step_new = copy.deepcopy(step)
-			step_new[0] = step[0] + align[step[0]]
-			step_new[1] = step[1] + align[step[1]]	
-			step_new[2] = steps + k
-			newPath.append(step_new)
-			del simu[step[1]]
-			del simu[step[0]]
-			simu.append(steps+k)
-			for i in range(len(simu)):
-				align[i] = simu[i] - i
-			k += 1
-		return newPath
-
-def load_path(filename):
-	with open(filename) as f:
-		data = f.readline()
-		data_tensor = list()
-		path_str = data.strip("path:")
-		path = path_str.split("), (")
-		path[0] = path[0].strip(" ((")
-		path[len(path) - 1] = path[len(path) - 1].strip("))\n")
-		steps = len(path)
-		for i in range(steps):
-			tensor = f.readline().split(" ")
-			tensor_u = list()
-			for ele in tensor:
-				ele = ele.strip("\n")
-				tensor_u.append(ele)
-#				print(ele.decode("UTF-8"))
-#			print(len(tensor_u[1]))
-			data_tensor.append(tensor_u)
-
-	k = 1
-	path_int = list()
-	for step in path:
-		step = step.split(", ")
-		step_new = [int(step[0]), int(step[1]), steps - k]
-		path_int.append(step_new)
-		k += 1
-	return path_int, data_tensor
-
-
-def write2slicetxt_notrans(mpath,tree_s,info,original_time,newPath,iter):
-
-	#original_time  = tree.contraction_cost()
-	slice_time = tree_s.contraction_cost()
-
-	filename = mpath+f'/trunk_info/sliced_{iter}.txt'
-	file = open(filename,'w')
-	input_subscripts = info.input_subscripts
-	
-	
-	input_list = input_subscripts.split(',')
-	#导出未slice前的tensor的符号字符串
-	for item in input_subscripts:
-		file.write(item)
-	file.write('\n')
 	
 
-	#导出要slice的边的符号
-	slice_list = tree_s.sliced_inds
-	slice_tensor_id = []
-	
-	#找出被slice的tensor的id
-	
-	for slice_index in slice_list:
-		for i,item in enumerate(input_list):
-			if slice_index in item:
-				slice_tensor_id.append(i)
-	slice_tensor_id = list(set(slice_tensor_id))
-	slice_tensor_id.sort()
-	
-	#导出被slice的tensor的id
-	
-	file.write(str(slice_tensor_id))
-	file.write('\n')
-	file.write(str(slice_list))
-	file.write('\n')
+if __name__=='__main__':
 
-	#导出slice后的tensor的符号字符串
-	indices_after_slice=[]
+	if len(sys.argv) != 2:
+		print('Usage: get_rearrange_path.py filename')
+		exit(-1)
+
+	#output = 'ǒıøâĥQPßÜbawvfeEDAzjiÂÁMLIHnmħĝrqÎÍāİįĬÚÙÒÑÖÕÊÉÆÅYXUT'
+	#ix_out = set()
+	#for i in output:
+	#	ix_out.add(i)
+
+	test = Test()
+
+	f=open(str(sys.argv[1]))
+	datas = f.readlines()
+	idx = datas[3]
+	idx = idx.strip()
 	
-	for string in input_list:
-		for char in slice_list:
-			if char in string:
-				string = string.replace(char,'')
-		indices_after_slice.append(string)
+	print("over")
+	eq = idx
+	idx_bk = idx
+	idx = idx.split(',')
 
-	for item in indices_after_slice:
-		file.write(item)
-		file.write(',')
-	file.write('\n')
-	
-	file.write(str(newPath))
-	file.write('\n')
-	file.write("original time cost is :"+str(original_time))
-	file.write('\n')
-	file.write("slice time cost is :"+str(slice_time))
-	file.write('\n')
-	file.write(str(get_contraction_from_tree(tree_s)))
-	file.close()
-	
+	index = datas[1]
+	index = index.strip()
+	index = index.replace('(','')
+	index = index.replace(')','')
+	index = index.replace(' ','')
+	index = index.replace("'",'')
+	sl = ''.join(index.split(','))
+	ix = set()
+	for i in sl:
+		ix.add(i)
 
-	return input_list, slice_list, slice_tensor_id, indices_after_slice
+	f.close()
 
-def write2slicedtxt(mpath, eq_original, eq_sliced, slice_list, newPath, stem_start, stem_length):
-	filename = mpath+'/sliced.txt'
-	slice_time = tree_s.contraction_cost()
-	file = open(filename,'w')
-	input_subscripts = info.input_subscripts
-	for item in eq_original:
-		file.write(item)
-	file.write('\n')
-	slice_tensor_id = []
+	print("index is:",index)
 
-    #找出被slice的tensor的id
-	for slice_index in slice_list:
-		for i,item in enumerate(eq_original):
-			if slice_index in item:
-				slice_tensor_id.append(i)
-	slice_tensor_id = list(set(slice_tensor_id))
-	slice_tensor_id.sort()
-	
-	#导出被slice的tensor的id
-	
-	file.write(str(slice_tensor_id))
-	file.write('\n')
-	file.write(str(slice_list))
-	file.write('\n')
+	#print(eq)
+	#for i in ix_out:
+	#	eq = eq.replace(i,'')
 
-	for item in eq_sliced:
-		file.write(item)
-		file.write(',')
-	file.write('\n')
- 
-	file.write(str(newPath))
-	file.write('\n')
+	lhs = eq
+	lhs = lhs.split(',')
+	change_index = set()
+	for i in ix:
+		for j in range(len(lhs)):
+			if (lhs[j].find(i) >= 0):
+				change_index.add(j)
+	#print(sorted(change_index))
+	#print(ix)
 
-	file.write(str(stem_start))
-	file.write('\n')
-
-	file.write(str(stem_length))
-	file.write('\n')
-
-
- 
-    
-def write2slicetxt_trans(mpath,tree_s,info,original_time,newPath):
-	
-	#original_time  = tree.contraction_cost()
-	slice_time = tree_s.contraction_cost()
-
-	filename = mpath+'/sliced_trans.txt'
-	file = open(filename,'w')
-	input_subscripts = info.input_subscripts
-	
-	input_list = input_subscripts.split(',')
-	print(input_list)
-	#input_list = input_subscripts
-	#导出未slice前的tensor的符号字符串
-	for item in input_subscripts:
-		file.write(item)
-	file.write('\n')
+	eq_sliced = eq
 	
 
-	#导出要slice的边的符号
-	slice_list = tree_s.sliced_inds
-	slice_tensor_id = []
-	
-	#找出被slice的tensor的id
-	
-	for slice_index in slice_list:
-		for i,item in enumerate(input_list):
-			if slice_index in item:
-				slice_tensor_id.append(i)
-	slice_tensor_id = list(set(slice_tensor_id))
-	slice_tensor_id.sort()
-	
-	#导出被slice的tensor的id
-	
-	file.write(str(slice_tensor_id))
-	file.write('\n')
-	file.write(str(slice_list))
-	file.write('\n')
+	lhs_sliced = eq_sliced.split(',')
+	path = get_last_line(str(sys.argv[1]))
 
-	#导出slice后的tensor的符号字符串
-	indices_after_slice=[]
-	# for item in slice_list:
-	# 	tree_s.remove_ind(item,inplace=False)
-	# mymap = tree_s.gen_leaves()
-	# for item in mymap:
-	# 	indices_after_slice.append(tree_s.get_inds(item))
-	for string in input_list:
-		for char in slice_list:
-			if char in string:
-				string = string.replace(char,'')
-		indices_after_slice.append(string)
-
-	for item in indices_after_slice:
-		file.write(item)
-		file.write(',')
-	file.write('\n')
+	print("path is:",path)
 	
-	file.write(str(newPath))
-	file.write('\n')
-	file.write("original time cost is :"+str(original_time))
-	file.write('\n')
-	file.write("slice time cost is :"+str(slice_time))
-	file.write('\n')
-
-	file.write(str(get_contraction_from_tree(tree_s)))
-	file.close()
-	
-
-	return input_list, slice_list, slice_tensor_id, indices_after_slice
-
-#导出tensor
-def write2array(mpath,tn):
-	filename = mpath+f'/array/array.txt'
-	
-	arrays = [t.data.tolist() for t in tn]
-	
-	file = open(filename,'w')
-	for array in arrays:
-
-		file.write(str(array) + '\n')
-	file.close()
-	
-
-class Slice_Cost:
-	def __init__(self,tree_or_info,slice_inds):
-		self.tree=tree_or_info
-		self.cost0=ctg.slicer.ContractionCosts.from_contraction_tree(tree_or_info)
-		self.costs={frozenset(): self.cost0}#这个costs记录每一步slice带来的overhead
-		self.slice_inds=slice_inds
-	
-	def cal_cost(self):
-		ix_sl = frozenset()
-		cost = self.costs[ix_sl]
-		for ix in self.slice_inds:
-			next_ix_sl = ix_sl | frozenset([ix])
-			next_cost = self.costs[next_ix_sl] = cost.remove(ix)
-			
-			ix_sl = next_ix_sl
-			cost = next_cost
-		#返回最后的cost
-		return cost
-
-#获取每一步收缩 的维度信息
-def get_contraction_from_tree(tree):
-	every_step=[]
-	for i, (p, l, r) in enumerate(tree.traverse()):
-		p_legs, l_legs, r_legs = map(tree.get_legs, [p, l, r])
-		p_inds, l_inds, r_inds = map(tree.get_inds, [p, l, r])
-		# print sizes and flops
-		p_flops = tree.get_flops(p)
-		p_sz, l_sz, r_sz = (math.log2(tree.get_size(node)) for node in [p, l, r])
-		if l_sz >= 13 and r_sz >= 13:
-			every_step.append([i,l_sz,r_sz,p_sz])
-	return every_step
-
-
-
-def find_optimized_path_info(basis,mpath,circ, target_size, max_search_time,iter):
-	#original_opt = get_optimizer_original(2**target_size, max_search_time)
-	opt = get_optimizer_sliced(2**target_size, max_search_time)
-	#开openleg
-	rehs = circ.amplitude_rehearse(b=basis,optimize=opt)
-	tn = rehs['tn']
-	info = rehs['info']
-	write2array(mpath,tn)
-	
-	tree_s = opt.get_tree()
-	trees_path = tree_s.get_path()
-	slice_list = tree_s.sliced_inds
-	
-	#利用path建一棵没有slice的完整的收缩树
-	tree_original = ctg.ContractionTree.from_path(inputs = tree_s.inputs,output=tree_s.output,size_dict=tree_s.size_dict,path=trees_path)
-
-	
-	input_subscripts = info.input_subscripts
-	input_list = input_subscripts.split(',')
-	eq_after_slice=[]
-	for string in input_list:
-		for char in slice_list:
-			if char in string:
-				string = string.replace(char,'')
-		eq_after_slice.append(string)
-	
-	lhs_sliced = eq_after_slice
-	newPath = path_str_to_int(trees_path)
+	#原始的三元组path
+	newPath = T.trans_path_index_str(path)
+	print("original path is:",newPath)
+	print("original path length is ",len(newPath))
 	indices = T.get_newPath_eq_index(lhs_sliced, newPath)
+
+	#利用szq_exchange交换A、B张量位置后的path
 	original_path = exchange_A_B_szq(newPath,indices)
-	szq_stems=find_stems(original_path,indices,13) # LDM can only store 13 dimension sub-tensor
+
+	szq_stems=find_stems(original_path,indices,13)
+	for stem in szq_stems:
+		print("each stem :",stem)
+	
+	print("indices")
+	#print(len(indices[107]),",",len(indices[547]))
+	#寻找path中的所有stems 
+	trunk_num = 0
 	stems = detect_stems_szq_v2(original_path, indices, 13, trunk_num)
+	for stem in stems:
+		print(stem)
+		test.test_stem(stem)
+	
+	Check_stem_legal(stems,indices)
+	test.test_new_path(original_path, True)
+	#print(indices)
+	#for index in indices:
+	#	print(indices.index(index), len(index))
+	#tail tensor original index
+	#print("stems is:",stems)
 	stem_start,stem_length = pick_realStem(stems)
+	
+	
+	print("new path is")
 	Stem=[]
 	for stem in stems:
 		for contract in stem:
 			Stem.append(contract)
-
+	#利用get_newpath_szq 将path重排，将stem都放到合适的位置
 	szqPath,before_len = get_newpath_szq(original_path,Stem)
+	print("Stem length is : ",len(Stem))
+	print("szq path length is ",len(szqPath))
+	print("szq path is:",szqPath)
+    
+	#计算绝对位置
 	for i in range(len(stem_start)):
 		stem_start[i] = stem_start[i]+before_len
+	print("stem_length is:",stem_length)
+	print("stem_start is:",stem_start)
 	
-	#实验一下官方提供的两种官方提供的计算时间复杂度的方法
-	#_,_,_,lhs_sliced = write2slicetxt_trans(mpath, tree_s, info, tree_original.contraction_cost(),trees_path)
-	write2slicedtxt(mpath, input_list, eq_after_slice, slice_list, szqPath, stem_start, stem_length)
+	stem_start,stem_length = Get_stem_info(stems,szqPath)
+	print("stem_length is:",stem_length)
+	print("stem_start is:",stem_start)
+	print("trunk_num is: ",trunk_num)
+	rearrange_path, st = T.path_rearrange(original_path, indices, Stem, [])
 	
-	return info,opt
-	#return rehs, original_opt,sliced_opt
-
-def find_path_info(circ, path):
-	tn = get_amplitude_tn(circ, 'complex64')
-
-	info = tn.contract(all, optimize=path, get='path-info', output_inds=[])
+	start_pos = rearrange_path.index(st)
 	
-	return info
-
-def get_last_line(filename):
-	try:
-		filesize=os.path.getsize(filename)
-		if filesize == 0:
-			return None
-		else:
-			with open(filename,'rb') as fp:
-				offset = -8
-				while -offset < filesize:
-					fp.seek(offset,2)
-					lines=fp.readlines()
-					if len(lines) >= 2:
-						return lines[-1].decode()
-					else:
-						offset *= 2
-				fp.seek(0)
-				lines=fp.readlines()
-				return lines[-1].decode()
-	except FileNotFoundError:
-		print(filename + ' not found! ')
-		return None
-
-
-def prepare_compute_marginal(circuit, n_marginal, max_size, max_search_time):
-	target_size = 2**max_size
-	marginal_qubits = circuit.calc_qubit_ordering()[-n_marginal:]
-	print('marginal_qubits:',marginal_qubits)
-	#rest_qubits = circuit.calc_qubit_ordering()[:(circuit.N - n_marginal)]
-	opt = get_optimizer_original(target_size, max_search_time)
-
-	backend = 'jax'
-	#fix = {k:np.random.choice(('0', '1')) for k in rest_qubits}
-
-	info = circuit.compute_marginal(where=marginal_qubits, optimize=opt, backend=backend, target_size=target_size, rehearse=True)
-	tn = get_amplitude_tn(circuit, 'complex64')
-	mpath = "./"
-	write2array(mpath,tn)
-	for key in info.keys():
-		print(key)
-	print(type(info[tn]))
-	return info
-
-
-def prepare_compute_amplitudes(iter,mpath,circuit,basis, max_size, max_search_time):
-
-	#info = prepare_compute_marginal(circuit, 0, max_size, max_search_time)
-	info, sliced_opt = find_optimized_path_info(basis,mpath,circuit, max_size, max_search_time,iter)
+	T.exchange_A_and_B(rearrange_path, indices, start_pos)
+	#print(st, start_pos)
+	#rearrange path
+	
+	
+	
+	newPath = rearrange_path
+	#szq  这里又rearrange了一下
+	T.path_index_rearrange(newPath, indices)
+	
+	# print(newPath)
+	test.test_new_path(newPath, True)
+	path_int = T.retrans_path_index(newPath)
+	
+	#print("new path is:",newPath)
+	#print(indices)
+	#for index in indices:
+	#	print(indices.index(index), len(index))
+	#print(path_int)
+	for i in range(len(newPath)+1,2*len(newPath)+1):
+		lhs_sliced.append('')
+	for i in range(len(newPath)):
+		ct1 = newPath[i][0]
+		ct2 = newPath[i][1]
+		common_index = [x for x in lhs_sliced[ct1] if x in lhs_sliced[ct2]]
+		res_index = ''.join(y for y in (lhs_sliced[ct1]+lhs_sliced[ct2]) if y not in common_index)
+		res_index = res_index.replace("'",'')
+		lhs_sliced[newPath[i][2]] = res_index
+	#get trans map
+#	print(newPath)
+	#print(lhs_sliced)
+	trans_map = T.gen_trans_map(newPath, lhs_sliced)
+	# for i in range(len(newPath)):
+	# 	print(i, trans_map[i])
+	end_pos = len(newPath)
+	pos, comms, comm_len, st_pos, ed_pos = T.detect_fused_pos(newPath, indices, end_pos, start_pos, 0, False)	
+	print("fused pos is",pos)
+	tensor_dim = []
+	for i in range(st_pos, ed_pos):
+		tensor_dim.append(len(indices[newPath[i][0]]))
+		tensor_dim.append(len(indices[newPath[i][1]]))
+		tensor_dim.append(len(indices[newPath[i][0]] & indices[newPath[i][1]])) 
+	print(comm_len)
+	fused_map, step_len = T.gen_whole_fused_map(newPath, lhs_sliced, comms, pos, False)
+	#step length:融合段的数量，和fused map长度是对的上的
+	print("step length is :" ,(step_len))
+	print("tensor dim is :",len(tensor_dim))
 	
 	
