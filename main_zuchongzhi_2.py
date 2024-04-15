@@ -268,7 +268,7 @@ if __name__ == '__main__':
 	#iter = -1
 	mpath = sys.argv[1]
 	zcz_depth = sys.argv[2]
-	qubits_num = 60
+	qbits_num = 60
 	#qbits_num = int(sys.argv[3])
 	circuit_dir = mpath + '/circuit.txt'
 	n, circuit, qubits_map = parse_all_information(circuit_dir)
