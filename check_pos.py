@@ -11,7 +11,7 @@ import random
 import sys
 import math
 from trans import Trans as T
-
+from tran import Trans
 
 def find_stems(path,indices,target_dim):
 	signal=[]
@@ -352,12 +352,12 @@ def detect_stem_szq(newPath,indices,target_dim):
 	end = stem_sort[-1][-1]
 	# #return stem_sort
 	#这里是在去除branch
-    for step in stem_sort:
-        start_index = stem_sort.index(step)
-        if step[-1] != end:
-            while(stem_sort[start_index + 1][0] != step[-1] and stem_sort[start_index + 1][1] != step[-1]):
-                del stem_sort[start_index + 1]
-    return stem_sort
+	for step in stem_sort:
+		start_index = stem_sort.index(step)
+		if step[-1] != end:
+			while(stem_sort[start_index + 1][0] != step[-1] and stem_sort[start_index + 1][1] != step[-1]):
+				del stem_sort[start_index + 1]
+	return stem_sort
 
 
 def sort_key(path):
@@ -534,12 +534,16 @@ def write2slicetxt_notrans(mpath,tree_s,info,original_time,newPath,iter):
 
 	return input_list, slice_list, slice_tensor_id, indices_after_slice
 
-def write2slicedtxt(mpath, eq_original, eq_sliced, slice_list, newPath, stem_start, stem_length):
+def write2slicedtxt(mpath, eq_original, eq_sliced, slice_list, newPath, stem_start, stem_length, tree_s, info):
 	filename = mpath+'/sliced.txt'
 	slice_time = tree_s.contraction_cost()
 	file = open(filename,'w')
 	input_subscripts = info.input_subscripts
-	for item in eq_original:
+	
+	
+	input_list = input_subscripts.split(',')
+	#导出未slice前的tensor的符号字符串
+	for item in input_subscripts:
 		file.write(item)
 	file.write('\n')
 	slice_tensor_id = []
@@ -647,7 +651,7 @@ def write2slicetxt_trans(mpath,tree_s,info,original_time,newPath):
 
 #导出tensor
 def write2array(mpath,tn):
-	filename = mpath+f'/array/array.txt'
+	filename = mpath+'/array.txt'
 	
 	arrays = [t.data.tolist() for t in tn]
 	
@@ -697,7 +701,9 @@ def find_optimized_path_info(basis,mpath,circ, target_size, max_search_time,iter
 	opt = get_optimizer_sliced(2**target_size, max_search_time)
 	#开openleg
 	rehs = circ.amplitude_rehearse(b=basis,optimize=opt)
+	print(type(circ))
 	tn = rehs['tn']
+	print(rehs)
 	info = rehs['info']
 	write2array(mpath,tn)
 	
@@ -723,7 +729,7 @@ def find_optimized_path_info(basis,mpath,circ, target_size, max_search_time,iter
 	indices = T.get_newPath_eq_index(lhs_sliced, newPath)
 	original_path = exchange_A_B_szq(newPath,indices)
 	szq_stems=find_stems(original_path,indices,13) # LDM can only store 13 dimension sub-tensor
-	stems = detect_stems_szq_v2(original_path, indices, 13, trunk_num)
+	stems = detect_stems_szq_v2(original_path, indices, 13, 0)
 	stem_start,stem_length = pick_realStem(stems)
 	Stem=[]
 	for stem in stems:
@@ -736,7 +742,7 @@ def find_optimized_path_info(basis,mpath,circ, target_size, max_search_time,iter
 	
 	#实验一下官方提供的两种官方提供的计算时间复杂度的方法
 	#_,_,_,lhs_sliced = write2slicetxt_trans(mpath, tree_s, info, tree_original.contraction_cost(),trees_path)
-	write2slicedtxt(mpath, input_list, eq_after_slice, slice_list, szqPath, stem_start, stem_length)
+	write2slicedtxt(mpath, input_list, eq_after_slice, slice_list, szqPath, stem_start, stem_length, tree_s, info)
 	
 	return info,opt
 	#return rehs, original_opt,sliced_opt
