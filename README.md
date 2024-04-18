@@ -8,7 +8,7 @@ pip install matplotlib
 
 pip install kahypar==1.3.5
 
-#when use this script,you need use follow command
+#when use this script,you just need follow command:
 
 python main_zuchongzhi_2.py  {path of circuit}  {qbit_num}
 
